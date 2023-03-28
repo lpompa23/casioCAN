@@ -19,7 +19,7 @@
  *          Build/doxigen/html/index.html
  */
 #include "app_bsp.h"
-
+#include "app_serial.h"
 
 /**
  * @brief   **Application entry point**
@@ -30,7 +30,15 @@
  */
 int main( void )
 {
-   
+   HAL_Init();
+   Serial_Init();
+
+   for( ; ;)
+   {
+
+        Serial_Task();
+
+   }
     return 0u;
 }
 
