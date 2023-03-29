@@ -3,6 +3,12 @@
 -------------------------------------------------------------------------------------------------*/
 #include "app_bsp.h"
 
+extern FDCAN_HandleTypeDef CANHandler;
+    
+void TIM16_FDCAN_IT0_IRQHandler( void )
+{
+    HAL_FDCAN_IRQHandler( &CANHandler );
+}
 
 /**------------------------------------------------------------------------------------------------
 Brief.- Punto de entrada del programa
