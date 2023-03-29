@@ -59,10 +59,13 @@ void Serial_Init( void )
 
 void Serial_Task( void )
 {
+    initialise_monitor_handles();
     if( CanTp_SingleFrameRx(messageRx,8) )
     {
         state = SERIAL_STATE_MESSAGE;
     }
+    printf("stado = %d\n\r",state);
+    state = 3;
     Serial_State_Machine();
 }
 
