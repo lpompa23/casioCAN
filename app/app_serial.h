@@ -45,6 +45,7 @@ typedef struct _APP_MsgTypeDef
 
 void Serial_Init( void );
 void Serial_Task( void );
+void Serial_State_Machine( void );
 static void CanTp_SingleFrameTx( uint8_t *data, uint8_t size );
 static uint8_t CanTp_SingleFrameRx( uint8_t *data, uint8_t *size );
 

@@ -8,6 +8,7 @@ FDCAN_FilterTypeDef CANFilter;
 uint8_t messageTx[8];
 uint8_t messageRx[8];
 uint8_t flag = 0u;
+static uint8_t state = SERIAL_STATE_IDLE;
 
 GPIO_InitTypeDef GPIO_InitStruct;
 APP_MsgTypeDef msgCasio;
@@ -58,8 +59,16 @@ void Serial_Init( void )
 
 void Serial_Task( void )
 {
-    static uint8_t state = SERIAL_STATE_IDLE;
+    if( CanTp_SingleFrameRx(messageRx,8) )
+    {
+        state = SERIAL_STATE_MESSAGE;
+    }
+    Serial_State_Machine();
+}
 
+void Serial_State_Machine( void )
+{
+   
     switch(state)
     {
         case SERIAL_STATE_IDLE:
@@ -87,12 +96,39 @@ void Serial_Task( void )
 
 static void CanTp_SingleFrameTx( uint8_t *data, uint8_t size )
 {
-
+    /*Colocanmos el mensaje en el buffer de salida y activamos el envio*/
+    HAL_FDCAN_AddMessageToTxFifoQ( &CANHandler, &CANTxHeader, messageTx );
 }
 
 static uint8_t CanTp_SingleFrameRx( uint8_t *data, uint8_t *size )
 {
-    return 0u;
+    uint8_t status = 0;
+
+    if( flag == 1u)
+    {
+        msgCasio.msg = data[1];
+        switch(msgCasio.msg)
+        {
+            case SERIAL_MSG_TIME:
+                msgCasio.tm.tm_hour = data[2];
+                msgCasio.tm.tm_min = data[3];
+                msgCasio.tm.tm_sec = data[4];
+                break;
+            case SERIAL_MSG_DATE:
+                msgCasio.tm.tm_mday = data[2];
+                msgCasio.tm.tm_mon = data[3];
+                uint32_t year = data[4] << 8;
+                msgCasio.tm.tm_year = year + data[5] ;
+                break;
+            case SERIAL_MSG_ALARM:
+                msgCasio.tm.tm_hour = data[2];
+                msgCasio.tm.tm_min = data[3];
+                break;
+        }
+        flag = 0;
+        status = 1;
+    }
+    return status;   
 }
 
 void HAL_FDCAN_RxFifo0Callback( FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs )
