@@ -11,6 +11,17 @@ typedef enum
     SERIAL_MSG_ALARM
 }APP_Messages;
 
+typedef enum
+{
+    SERIAL_STATE_IDLE = 0,
+    SERIAL_STATE_MESSAGE,
+    SERIAL_STATE_ERROR,
+    SERIAL_STATE_TIME,
+    SERIAL_STATE_DATE,
+    SERIAL_STATE_ALARM,
+    SERIAL_STATE_OK
+}APP_States;
+
 typedef struct _APP_TmTypeDef 
 {
     uint32_t tm_sec;         /* seconds,  range 0 to 59          */
