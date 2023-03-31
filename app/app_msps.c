@@ -17,6 +17,9 @@ void HAL_FDCAN_MspInit(FDCAN_HandleTypeDef *hfdcan)
     GPIOCanStruct.Pull = GPIO_NOPULL;
     GPIOCanStruct.Speed = GPIO_SPEED_FREQ_HIGH;
     HAL_GPIO_Init( GPIOD, &GPIOCanStruct );
+
+    HAL_NVIC_SetPriority(TIM16_FDCAN_IT0_IRQn, 2, 0);
+    HAL_NVIC_EnableIRQ(TIM16_FDCAN_IT0_IRQn);
 }
 
 void HAL_MspInit( void )

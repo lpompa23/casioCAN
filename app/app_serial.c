@@ -8,9 +8,9 @@ FDCAN_FilterTypeDef CANFilter;
 uint8_t messageTx[8];
 uint8_t messageRx[8];
 uint8_t flag = 0u;
-static uint8_t state = SERIAL_STATE_IDLE;
 
-GPIO_InitTypeDef GPIO_InitStruct;
+
+//GPIO_InitTypeDef GPIO_InitStruct;
 APP_MsgTypeDef msgCasio;
 
 void Serial_Init( void )
@@ -26,7 +26,7 @@ void Serial_Init( void )
     CANHandler.Init.TransmitPause       = DISABLE;
     CANHandler.Init.ProtocolException   = DISABLE;
     CANHandler.Init.ExtFiltersNbr       = 0;
-    CANHandler.Init.StdFiltersNbr       = 0;
+    CANHandler.Init.StdFiltersNbr       = 1; /* indicamos que vamos a utilizar filtros */
     CANHandler.Init.NominalPrescaler    = 10;
     CANHandler.Init.NominalSyncJumpWidth = 1;
     CANHandler.Init.NominalTimeSeg1     = 11;
@@ -58,42 +58,69 @@ void Serial_Init( void )
 }
 
 void Serial_Task( void )
-{
-    initialise_monitor_handles();
-    if( CanTp_SingleFrameRx(messageRx,8) )
-    {
-        state = SERIAL_STATE_MESSAGE;
-    }
-    printf("stado = %d\n\r",state);
-    state = 3;
+{ 
     Serial_State_Machine();
 }
 
 void Serial_State_Machine( void )
 {
-   
+    initialise_monitor_handles();
+    static uint8_t state = SERIAL_STATE_IDLE;
+
     switch(state)
     {
         case SERIAL_STATE_IDLE:
-        break;
+            if( CanTp_SingleFrameRx(messageRx,8) )
+            {
+                state = SERIAL_STATE_MESSAGE;
+            }        
+            break;
 
         case SERIAL_STATE_MESSAGE:
-        break;
+            printf("MESSAGE\n\r");
+            switch(msgCasio.msg)
+            {
+                case SERIAL_MSG_TIME:
+                    state = SERIAL_STATE_TIME;
+                    break;
+
+                case SERIAL_MSG_DATE:
+                    state = SERIAL_STATE_DATE;
+                    break;
+
+                case SERIAL_MSG_ALARM:
+                    state = SERIAL_STATE_ALARM;
+                    break;
+                default:
+                    state = SERIAL_STATE_ERROR;
+            }
+            break;
 
         case SERIAL_STATE_TIME:
-        break;
+            printf("TIME\n\r");
+            printf("hora: %0.2d:%0.2d:%0.2d\n\r",msgCasio.tm.tm_hour,msgCasio.tm.tm_min,msgCasio.tm.tm_sec);
+            state = SERIAL_STATE_IDLE;
+            break;
 
         case SERIAL_STATE_DATE:
-        break;
+            printf("DATE\n\r");
+            state = SERIAL_STATE_IDLE;
+            break;
 
         case SERIAL_STATE_ALARM:
-        break;
+            printf("ALARM\n\r");
+            state = SERIAL_STATE_IDLE;
+            break;
 
         case SERIAL_STATE_OK:
-        break;
+            printf("OK\n\r");
+            state = SERIAL_STATE_IDLE;
+            break;
 
         case SERIAL_STATE_ERROR:
-        break;
+            printf("ERROR\n\r");
+            state = SERIAL_STATE_IDLE;
+            break;
     }
 }
 
