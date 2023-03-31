@@ -5,12 +5,11 @@ FDCAN_HandleTypeDef CANHandler;
 FDCAN_TxHeaderTypeDef CANTxHeader;
 FDCAN_RxHeaderTypeDef CANRxHeader;
 FDCAN_FilterTypeDef CANFilter;
-uint8_t messageTx[8];
-uint8_t messageRx[8];
+uint8_t messageTx[8] = {0x07}; /*  (0 to 7) Single frame data length*/
+uint8_t messageRx[8] = {0};
 uint8_t flag = 0u;
 
 
-//GPIO_InitTypeDef GPIO_InitStruct;
 APP_MsgTypeDef msgCasio;
 
 void Serial_Init( void )
@@ -37,7 +36,7 @@ void Serial_Init( void )
     CANTxHeader.IdType      = FDCAN_STANDARD_ID;
     CANTxHeader.FDFormat    = FDCAN_CLASSIC_CAN;
     CANTxHeader.TxFrameType = FDCAN_DATA_FRAME;
-    CANTxHeader.Identifier  = 0x111;
+    CANTxHeader.Identifier  = 0x111;    /* según requerimiento */
     CANTxHeader.DataLength  = FDCAN_DLC_BYTES_8;
 
     /* Configure reception filter to Rx FIFO 0, este filtro solo aceptara mensajes con el ID 0x1FE */
@@ -45,7 +44,7 @@ void Serial_Init( void )
     CANFilter.FilterIndex = 0;
     CANFilter.FilterType = FDCAN_FILTER_MASK;
     CANFilter.FilterConfig = FDCAN_FILTER_TO_RXFIFO0;
-    CANFilter.FilterID1 = 0x111;
+    CANFilter.FilterID1 = 0x111; /* segun requerimiento */
     CANFilter.FilterID2 = 0x7FF;
     HAL_FDCAN_ConfigFilter( &CANHandler, &CANFilter );
     /*indicamos que los mensajes que no vengan con el filtro indicado sean rechazados*/
@@ -99,7 +98,7 @@ void Serial_State_Machine( void )
         case SERIAL_STATE_TIME:
             printf("TIME\n\r");
             printf("hora: %0.2d:%0.2d:%0.2d\n\r",msgCasio.tm.tm_hour,msgCasio.tm.tm_min,msgCasio.tm.tm_sec);
-            state = SERIAL_STATE_IDLE;
+            state = SERIAL_STATE_OK;
             break;
 
         case SERIAL_STATE_DATE:
@@ -114,11 +113,15 @@ void Serial_State_Machine( void )
 
         case SERIAL_STATE_OK:
             printf("OK\n\r");
+            messageTx[1] = 0x55;
+            CanTp_SingleFrameTx(messageTx,8);
             state = SERIAL_STATE_IDLE;
             break;
 
         case SERIAL_STATE_ERROR:
             printf("ERROR\n\r");
+            messageTx[1] = 0xAA;
+            CanTp_SingleFrameTx(messageTx,8);
             state = SERIAL_STATE_IDLE;
             break;
     }
