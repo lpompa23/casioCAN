@@ -69,7 +69,7 @@ void Serial_State_Machine( void )
     switch(state)
     {
         case SERIAL_STATE_IDLE:
-            if( CanTp_SingleFrameRx(messageRx,8) )
+            if( CanTp_SingleFrameRx( messageRx,8 ) )
             {
                 state = SERIAL_STATE_MESSAGE;
             }        
@@ -97,18 +97,41 @@ void Serial_State_Machine( void )
 
         case SERIAL_STATE_TIME:
             printf("TIME\n\r");
-            printf("hora: %0.2d:%0.2d:%0.2d\n\r",msgCasio.tm.tm_hour,msgCasio.tm.tm_min,msgCasio.tm.tm_sec);
-            state = SERIAL_STATE_OK;
+            if( validateTime( msgCasio.tm.tm_hour, msgCasio.tm.tm_min, msgCasio.tm.tm_sec ) )
+            {
+                printf("%0.2d:%0.2d:%0.2d Hrs\n\r",msgCasio.tm.tm_hour, msgCasio.tm.tm_min, msgCasio.tm.tm_sec);
+                state = SERIAL_STATE_OK;
+            }
+            else
+            {
+                state = SERIAL_STATE_ERROR;
+            }        
             break;
 
         case SERIAL_STATE_DATE:
             printf("DATE\n\r");
-            state = SERIAL_STATE_IDLE;
+            if( validateDate( msgCasio.tm.tm_mday, msgCasio.tm.tm_mon, msgCasio.tm.tm_year) )
+            {
+                printf("%0.2d//%0.2d//%0.2d \n\r",msgCasio.tm.tm_mday, msgCasio.tm.tm_mon, msgCasio.tm.tm_year);
+                state = SERIAL_STATE_IDLE;
+            }
+            else
+            {
+                state = SERIAL_STATE_ERROR;
+            }
             break;
 
         case SERIAL_STATE_ALARM:
-            printf("ALARM\n\r");
-            state = SERIAL_STATE_IDLE;
+            printf("ALARMA\n\r");
+            if( validateTime( msgCasio.tm.tm_hour, msgCasio.tm.tm_min, 0 ) )
+            {
+                printf("%0.2d:%0.2d Hrs\n\r",msgCasio.tm.tm_hour, msgCasio.tm.tm_min);
+                state = SERIAL_STATE_OK;
+            }
+            else
+            {
+                state = SERIAL_STATE_ERROR;
+            }     
             break;
 
         case SERIAL_STATE_OK:
@@ -172,4 +195,58 @@ void HAL_FDCAN_RxFifo0Callback( FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs
         HAL_FDCAN_GetRxMessage( hfdcan, FDCAN_RX_FIFO0, &CANRxHeader, messageRx );
         flag = 1u;
     }
+}
+
+uint8_t validateDate(uint32_t day, uint32_t month, uint32_t year)
+{
+    uint8_t success = 0;
+    uint32_t maxDay;
+
+    if(month >= 1 && month <= 12)
+    {
+        switch(month)
+        {
+            case 1:
+            case 3:
+            case 5:
+            case 7:
+            case 8:
+            case 10:
+            case 12:
+                maxDay = 31;
+                break;
+            case 4:
+            case 6:
+            case 9:
+            case 11:
+                maxDay = 30;
+                break;
+            case 2:
+                if( year % 4 == 0 && year % 100 != year % 400 )
+                {
+                    maxDay = 29;
+                }
+                else 
+                {
+                    maxDay = 28;
+                }
+                break;
+        }    
+        if( (day >= 1 && day <= maxDay) && (year >= 1901 && year <= 2099) )
+        {
+            success = 1;
+        }
+    }
+    return success; 
+}
+
+uint8_t validateTime(uint32_t hour, uint32_t min, uint32_t seg)
+{
+    uint8_t success = 0;
+
+    if( (hour >= 0 && hour <= 23) && (min >= 0 && min <= 59) && (seg >= 0 && seg <= 59) )
+    { 
+        success = 1;
+    }
+    return success;
 }
