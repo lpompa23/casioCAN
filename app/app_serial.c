@@ -54,6 +54,9 @@ void Serial_Init( void )
     HAL_FDCAN_Start( &CANHandler);
     /*activamos la interrupcion por recepcion en el fifo0 cuando llega algun mensaje*/
     HAL_FDCAN_ActivateNotification( &CANHandler, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0 );
+
+    /* Inicializando la estructura de mensajes */
+    msgCasio.msg = SERIAL_MSG_NONE;
 }
 
 void Serial_Task( void )
@@ -69,10 +72,14 @@ void Serial_State_Machine( void )
     switch(state)
     {
         case SERIAL_STATE_IDLE:
-            if( CanTp_SingleFrameRx( messageRx,8 ) )
+            //if( CanTp_SingleFrameRx( messageRx,8 ) )
+            //{
+            //    state = SERIAL_STATE_MESSAGE;
+            //}
+            if( msgCasio.msg != SERIAL_MSG_NONE)
             {
                 state = SERIAL_STATE_MESSAGE;
-            }        
+            }
             break;
 
         case SERIAL_STATE_MESSAGE:
@@ -180,6 +187,8 @@ static uint8_t CanTp_SingleFrameRx( uint8_t *data, uint8_t *size )
                 msgCasio.tm.tm_hour = data[2];
                 msgCasio.tm.tm_min = data[3];
                 break;
+            default:
+                msgCasio.msg = SERIAL_MSG_NONE;
         }
         flag = 0;
         status = 1;
