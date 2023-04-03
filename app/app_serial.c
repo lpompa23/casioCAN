@@ -66,7 +66,7 @@ void Serial_Task( void )
 
 void Serial_State_Machine( void )
 {
-    initialise_monitor_handles();
+   // initialise_monitor_handles();
     static uint8_t state = SERIAL_STATE_IDLE;
 
     switch(state)
@@ -83,7 +83,7 @@ void Serial_State_Machine( void )
             break;
 
         case SERIAL_STATE_MESSAGE:
-            printf("MESSAGE\n\r");
+           // printf("MESSAGE\n\r");
             switch(msgCasio.msg)
             {
                 case SERIAL_MSG_TIME:
@@ -103,10 +103,10 @@ void Serial_State_Machine( void )
             break;
 
         case SERIAL_STATE_TIME:
-            printf("TIME\n\r");
+            //printf("TIME\n\r");
             if( validateTime( msgCasio.tm.tm_hour, msgCasio.tm.tm_min, msgCasio.tm.tm_sec ) )
             {
-                printf("%0.2d:%0.2d:%0.2d Hrs\n\r",msgCasio.tm.tm_hour, msgCasio.tm.tm_min, msgCasio.tm.tm_sec);
+                //printf("%0.2d:%0.2d:%0.2d Hrs\n\r",msgCasio.tm.tm_hour, msgCasio.tm.tm_min, msgCasio.tm.tm_sec);
                 state = SERIAL_STATE_OK;
             }
             else
@@ -116,10 +116,10 @@ void Serial_State_Machine( void )
             break;
 
         case SERIAL_STATE_DATE:
-            printf("DATE\n\r");
+            //printf("DATE\n\r");
             if( validateDate( msgCasio.tm.tm_mday, msgCasio.tm.tm_mon, msgCasio.tm.tm_year) )
             {
-                printf("%0.2d//%0.2d//%0.2d \n\r",msgCasio.tm.tm_mday, msgCasio.tm.tm_mon, msgCasio.tm.tm_year);
+                //printf("%0.2d//%0.2d//%0.2d \n\r",msgCasio.tm.tm_mday, msgCasio.tm.tm_mon, msgCasio.tm.tm_year);
                 state = SERIAL_STATE_IDLE;
             }
             else
@@ -142,14 +142,14 @@ void Serial_State_Machine( void )
             break;
 
         case SERIAL_STATE_OK:
-            printf("OK\n\r");
+            //printf("OK\n\r");
             messageTx[1] = 0x55;
             CanTp_SingleFrameTx(messageTx,8);
             state = SERIAL_STATE_IDLE;
             break;
 
         case SERIAL_STATE_ERROR:
-            printf("ERROR\n\r");
+            //printf("ERROR\n\r");
             messageTx[1] = 0xAA;
             CanTp_SingleFrameTx(messageTx,8);
             state = SERIAL_STATE_IDLE;

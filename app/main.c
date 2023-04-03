@@ -20,8 +20,9 @@
  */
 #include "app_bsp.h"
 #include "app_serial.h"
+#include "app_clock.h"
 
-extern void initialise_monitor_handles(void);
+//extern void initialise_monitor_handles(void);
 
 /**
  * @brief   **Application entry point**
@@ -34,6 +35,7 @@ int main( void )
 {
    HAL_Init();
    Serial_Init();
+   Clock_Init();
 
    initialise_monitor_handles();
 
@@ -41,6 +43,7 @@ int main( void )
    {
 
         Serial_Task();
+        Clock_Task();
 
    }
     return 0u;
