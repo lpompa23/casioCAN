@@ -58,7 +58,7 @@ static void Clock_State_Machine( void )
             {
                 state = CLOCK_STATE_DISPLAY;
             }
-            else if( msgCasio.msg != SERIAL_MSG_NONE)
+            if( msgCasio.msg != SERIAL_MSG_NONE)
             {
                 state = CLOCK_STATE_MESSAGE;
             }
@@ -148,7 +148,10 @@ static uint8_t elapsed1Seg( void )
 
     if(sTime.Seconds == seg)
     {
-        elapsed = 1;
+        seg++;
+        if(seg == 60) 
+            seg = 0;
+        elapsed = 1;   
     }
 
     return elapsed;
@@ -160,6 +163,6 @@ static void display( void )
 
     printf("\n");
     printf("Time:  %02d:%02d:%02d\n\r", sTime.Hours, sTime.Minutes, sTime.Seconds);
-    printf("Date:  %02d//%02d//%02d\n\r", sDate.Date, sDate.Month, sDate.Year);
+    printf("Date:  %02d/%02d/%02d\n\r", sDate.Date, sDate.Month, sDate.Year);
     printf("Alarm: %02d:%02d\n\r", sAlarm.AlarmTime.Hours, sAlarm.AlarmTime.Minutes);
 }
