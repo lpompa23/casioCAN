@@ -14,5 +14,8 @@ typedef enum
 
 void Clock_Init( void );
 void Clock_Task( void );
-
+void Clock_State_Machine( void );
+void updateTime( void );
+void updateDate( void );
+void updateAlarm( void );
 #endif

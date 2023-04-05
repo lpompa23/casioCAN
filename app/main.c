@@ -37,7 +37,7 @@ int main( void )
    Serial_Init();
    Clock_Init();
 
-   initialise_monitor_handles();
+  // initialise_monitor_handles();
 
    for( ; ;)
    {
