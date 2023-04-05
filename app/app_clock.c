@@ -10,37 +10,10 @@ RTC_HandleTypeDef hrtc;
 static RTC_DateTypeDef sDate = {0};
 static RTC_TimeTypeDef sTime = {0};
 static RTC_AlarmTypeDef sAlarm = {0};
+static uint8_t seg = 0;
 
 void Clock_Init( void )
 {
-    /*configuration
-    hrtc.Instance             = RTC;
-    hrtc.Init.HourFormat      = RTC_HOURFORMAT_24;
-    hrtc.Init.AsynchPrediv    = 127; //RTC_ASYNCH_PREDIV;
-    hrtc.Init.SynchPrediv     = 255; //RTC_SYNCH_PREDIV;
-    hrtc.Init.OutPut          = RTC_OUTPUT_DISABLE;
-
-    hrtc.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
-    hrtc.Init.OutPutType     = RTC_OUTPUT_TYPE_OPENDRAIN;
-     initilize the RTC with 24 hour format and no output signal enable 
-    HAL_RTC_Init( &hrtc );
-
-     Setting time and date in BCD format 
-    sTime.Hours   = 0x12;
-    sTime.Minutes = 0x00;
-    sTime.Seconds = 0x01;
-    sTime.SubSeconds = 0x00;
-    sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
-    sTime.StoreOperation = RTC_STOREOPERATION_RESET;
-    Set the time to 12:00:00
-    HAL_RTC_SetTime( &hrtc, &sTime, RTC_FORMAT_BCD );
-
-    sDate.WeekDay = RTC_WEEKDAY_MONDAY;
-    sDate.Month = RTC_MONTH_MARCH;
-    sDate.Date = 0x03;
-    sDate.Year = 0x23;
-    Set date to Monday, March 3, 2023
-    HAL_RTC_SetDate( &hrtc, &sDate, RTC_FORMAT_BCD ); */
     /*configuration*/
     hrtc.Instance             = RTC;
     hrtc.Init.HourFormat      = RTC_HOURFORMAT_24;
@@ -50,50 +23,42 @@ void Clock_Init( void )
     /* initilize the RTC with 24 hour format and no output signal enble */
     HAL_RTC_Init( &hrtc );  
 
-    sTime.Hours   = 0x02;
+    sTime.Hours   = 0x12;
     sTime.Minutes = 0x00;
     sTime.Seconds = 0x00;
     sTime.SubSeconds = 0x00;
     sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
     sTime.StoreOperation = RTC_STOREOPERATION_RESET;
-    /*Set the time to 2:00:00*/
+    /*Set the time to 12:00:00*/
     HAL_RTC_SetTime( &hrtc, &sTime, RTC_FORMAT_BCD );
 
-    sDate.WeekDay = RTC_WEEKDAY_MONDAY;
-    sDate.Month = RTC_MONTH_APRIL;
-    sDate.Date = 0x16;
-    sDate.Year = 0x18;
-    /*Set date to Monday, April 16, 2018*/
+    sDate.WeekDay = RTC_WEEKDAY_THURSDAY;
+    sDate.Month = RTC_MONTH_MARCH;
+    sDate.Date = 0x04;
+    sDate.Year = 0x23;
+    /*Set date to Thursday, march 4, 2023*/
     HAL_RTC_SetDate( &hrtc, &sDate, RTC_FORMAT_BCD );
 
+    seg = sTime.Seconds;
 }   
 
 void Clock_Task( void )
 {
-    static uint8_t seg = 0;
-    initialise_monitor_handles();
-    //Clock_State_Machine();
-    HAL_RTC_GetTime( &hrtc, &sTime, RTC_FORMAT_BIN );
-    HAL_RTC_GetDate( &hrtc, &sDate, RTC_FORMAT_BIN );
-    
-    if(sTime.Seconds == seg)
-    {
-        printf("%02d:%02d:%02d\n\r", sTime.Hours, sTime.Minutes, sTime.Seconds);
-        seg++;
-        if(seg == 60) 
-            seg = 0;
-    
-    }
+    Clock_State_Machine(); 
 }
 
-void Clock_State_Machine( void )
+static void Clock_State_Machine( void )
 {
     static uint8_t state = CLOCK_STATE_IDLE;
 
     switch(state)
     {
         case CLOCK_STATE_IDLE:
-            if( msgCasio.msg != SERIAL_MSG_NONE)
+            if ( elapsed1Seg() )
+            {
+                state = CLOCK_STATE_DISPLAY;
+            }
+            else if( msgCasio.msg != SERIAL_MSG_NONE)
             {
                 state = CLOCK_STATE_MESSAGE;
             }
@@ -133,10 +98,14 @@ void Clock_State_Machine( void )
             updateAlarm();
             state = CLOCK_STATE_IDLE; 
             break;
+        case CLOCK_STATE_DISPLAY:
+            display( );
+            state = CLOCK_STATE_IDLE;
+            break;
     }
 }
 
-void updateTime( void )
+static void updateTime( void )
 {
     /* Setting time in BCD format */
     sTime.Hours   = msgCasio.tm.tm_hour;
@@ -145,9 +114,11 @@ void updateTime( void )
 
     /*Set the time */
     HAL_RTC_SetTime( &hrtc, &sTime, RTC_FORMAT_BCD );
+
+    seg = sTime.Seconds;
 }
 
-void updateDate( void )
+static void updateDate( void )
 {
     /* Setting date in BCD format */
     sDate.Month = msgCasio.tm.tm_mon;
@@ -158,7 +129,7 @@ void updateDate( void )
     HAL_RTC_SetDate( &hrtc, &sDate, RTC_FORMAT_BCD );
 }
 
-void updateAlarm( void )
+static void updateAlarm( void )
 {
     /* Setting Alarm in BCD format */
     sAlarm.AlarmTime.Hours   = msgCasio.tm.tm_hour;
@@ -166,4 +137,29 @@ void updateAlarm( void )
     
     /*Set the alarm */
     HAL_RTC_SetAlarm( &hrtc, &sAlarm, RTC_FORMAT_BCD );
+}
+
+static uint8_t elapsed1Seg( void )
+{
+    uint8_t elapsed = 0;
+
+    HAL_RTC_GetTime( &hrtc, &sTime, RTC_FORMAT_BIN );
+    HAL_RTC_GetDate( &hrtc, &sDate, RTC_FORMAT_BIN );
+
+    if(sTime.Seconds == seg)
+    {
+        elapsed = 1;
+    }
+
+    return elapsed;
+}
+
+static void display( void )
+{
+    initialise_monitor_handles();
+
+    printf("\n");
+    printf("Time:  %02d:%02d:%02d\n\r", sTime.Hours, sTime.Minutes, sTime.Seconds);
+    printf("Date:  %02d//%02d//%02d\n\r", sDate.Date, sDate.Month, sDate.Year);
+    printf("Alarm: %02d:%02d\n\r", sAlarm.AlarmTime.Hours, sAlarm.AlarmTime.Minutes);
 }
