@@ -35,8 +35,7 @@ int main( void )
    HAL_Init();
    Serial_Init();
    Clock_Init();
-
-  
+ 
 
    for( ; ;)
    {

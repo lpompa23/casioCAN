@@ -4,8 +4,8 @@
 
 extern void initialise_monitor_handles(void);
 
-extern APP_MsgTypeDef msgCasio;
-RTC_HandleTypeDef hrtc;
+extern APP_MsgTypeDef Serial_Msg;
+static RTC_HandleTypeDef hrtc;
 
 static RTC_DateTypeDef sDate = {0};
 static RTC_TimeTypeDef sTime = {0};
@@ -44,38 +44,40 @@ void Clock_Init( void )
 
 void Clock_Task( void )
 {
-    static uint8_t state = CLOCK_STATE_IDLE;
+    static APP_Clock_State state = CLOCK_STATE_IDLE;
 
     switch(state)
     {
         case CLOCK_STATE_IDLE:
-            if ( msgCasio.msg != SERIAL_MSG_NONE )
+            if ( Serial_Msg.msg != SERIAL_MSG_NONE )
             {
                 state = CLOCK_STATE_MESSAGE;
             }
-            else if( elapsed1Seg() )
+            if( elapsed1Seg() == 1u)
             {
                 state = CLOCK_STATE_DISPLAY;
             }
             break;
 
         case CLOCK_STATE_MESSAGE:
-            switch(msgCasio.msg)
+            switch(Serial_Msg.msg)
             {
                 case SERIAL_MSG_TIME:
                     state = CLOCK_STATE_TIME;
-                    msgCasio.msg = SERIAL_MSG_NONE;
+                    Serial_Msg.msg = SERIAL_MSG_NONE;
                     break;
 
                 case SERIAL_MSG_DATE:
                     state = CLOCK_STATE_DATE;
-                    msgCasio.msg = SERIAL_MSG_NONE;
+                    Serial_Msg.msg = SERIAL_MSG_NONE;
                     break;
 
                 case SERIAL_MSG_ALARM:
                     state = CLOCK_STATE_ALARM;
-                    msgCasio.msg = SERIAL_MSG_NONE;
+                    Serial_Msg.msg = SERIAL_MSG_NONE;
                     break;
+                default:
+
             }
             break;
 
@@ -100,15 +102,16 @@ void Clock_Task( void )
             display( );
             state = CLOCK_STATE_IDLE;
             break;
+        default:
     } 
 }
 
-static void updateTime( void )
+void updateTime( void )
 {
     /* Setting time in BCD format */
-    sTime.Hours   = msgCasio.tm.tm_hour;
-    sTime.Minutes = msgCasio.tm.tm_min;
-    sTime.Seconds = msgCasio.tm.tm_sec;
+    sTime.Hours   = Serial_Msg.tm.tm_hour;
+    sTime.Minutes = Serial_Msg.tm.tm_min;
+    sTime.Seconds = Serial_Msg.tm.tm_sec;
 
     /*Set the time */
     HAL_RTC_SetTime( &hrtc, &sTime, RTC_FORMAT_BIN );
@@ -119,9 +122,9 @@ static void updateTime( void )
 static void updateDate( void )
 {
     /* Setting date in BCD format */
-    sDate.Month = msgCasio.tm.tm_mon;
-    sDate.Date = msgCasio.tm.tm_mday;
-    sDate.Year = ( ( msgCasio.tm.tm_year % 1000 ) % 100 );
+    sDate.Month = Serial_Msg.tm.tm_mon;
+    sDate.Date = Serial_Msg.tm.tm_mday;
+    sDate.Year = ( ( Serial_Msg.tm.tm_year % 1000u ) % 100u );
 
     /*Set the date */
     HAL_RTC_SetDate( &hrtc, &sDate, RTC_FORMAT_BIN );
@@ -130,8 +133,8 @@ static void updateDate( void )
 static void updateAlarm( void )
 {
     /* Setting Alarm in BCD format */
-    sAlarm.AlarmTime.Hours   = msgCasio.tm.tm_hour;
-    sAlarm.AlarmTime.Minutes = msgCasio.tm.tm_min;
+    sAlarm.AlarmTime.Hours   = Serial_Msg.tm.tm_hour;
+    sAlarm.AlarmTime.Minutes = Serial_Msg.tm.tm_min;
     
     /*Set the alarm */
     HAL_RTC_SetAlarm( &hrtc, &sAlarm, RTC_FORMAT_BIN );
@@ -139,7 +142,7 @@ static void updateAlarm( void )
 
 static uint8_t elapsed1Seg( void )
 {
-    uint8_t elapsed = 0;
+    uint8_t elapsed = 0u;
 
     HAL_RTC_GetTime( &hrtc, &sTime, RTC_FORMAT_BIN );
     HAL_RTC_GetDate( &hrtc, &sDate, RTC_FORMAT_BIN );
@@ -147,9 +150,11 @@ static uint8_t elapsed1Seg( void )
     if(sTime.Seconds == seg)
     {
         seg++;
-        if(seg == 60) 
-            seg = 0;
-        elapsed = 1;   
+        if(seg == 60u) 
+        {
+            seg = 0u;
+        }
+        elapsed = 1u;   
     }
 
     return elapsed;

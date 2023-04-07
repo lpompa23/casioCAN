@@ -20,5 +20,4 @@ static void updateDate( void );
 static void updateAlarm( void );
 static uint8_t elapsed1Seg( void );
 static void display( void );
-
 #endif

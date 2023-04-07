@@ -3,7 +3,7 @@
 
 #include "app_bsp.h"
 
-typedef enum
+typedef enum 
 {
     SERIAL_MSG_NONE = 0,
     SERIAL_MSG_TIME,
@@ -35,13 +35,13 @@ typedef struct _APP_TmTypeDef
     uint32_t tm_isdst;       /* daylight saving time             */
 }APP_TmTypeDef;
 
+
 typedef struct _APP_MsgTypeDef
 {
-    uint8_t msg;          /*!< Store the message type to send */
+    APP_Messages msg;          /*!< Store the message type to send */
     APP_TmTypeDef tm;     /*!< time and date in stdlib tm format */
 }APP_MsgTypeDef;
-
-
+ 
 
 void Serial_Init( void );
 void Serial_Task( void );
