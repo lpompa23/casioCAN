@@ -171,7 +171,7 @@ static void display( void )
     initialise_monitor_handles();
 
     printf("\n"); /* cppcheck-suppress misra-c2012-17.7 ; the function es only for testint pourpose */
-    printf("Time:  %02d:%02d:%02d\n\r", sTime.Hours, sTime.Seconds, sTime.Seconds); /* cppcheck-suppress misra-c2012-17.7 ; the function es only for testint pourpose */
+    printf("Time:  %02d:%02d:%02d\n\r", sTime.Hours, sTime.Minutes, sTime.Seconds); /* cppcheck-suppress misra-c2012-17.7 ; the function es only for testint pourpose */
     printf("Date:  %02d/%02d/%02d\n\r", sDate.Date, sDate.Month, sDate.Year); /* cppcheck-suppress misra-c2012-17.7 ; the function es only for testint pourpose */
     printf("Alarm: %02d:%02d\n\r", sAlarm.AlarmTime.Hours, sAlarm.AlarmTime.Minutes); /* cppcheck-suppress misra-c2012-17.7 ; the function es only for testint pourpose */
 }
