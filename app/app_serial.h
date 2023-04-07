@@ -45,10 +45,11 @@ typedef struct _APP_MsgTypeDef
 
 void Serial_Init( void );
 void Serial_Task( void );
-void Serial_State_Machine( void );
 static void CanTp_SingleFrameTx( uint8_t *data, uint8_t size );
 static uint8_t CanTp_SingleFrameRx( uint8_t *data, uint8_t *size );
-uint8_t validateDate(uint32_t day, uint32_t month, uint32_t year);
-uint8_t validateTime(uint32_t hour, uint32_t min, uint32_t seg);
+static uint8_t validateDate( uint8_t *data );
+static uint8_t validateTime( uint8_t *data );
+static uint8_t validateAlarm( uint8_t *data);
+static void updateMessageCAN( uint8_t * data);
 
 #endif

@@ -5,12 +5,12 @@ FDCAN_HandleTypeDef CANHandler;
 FDCAN_TxHeaderTypeDef CANTxHeader;
 FDCAN_RxHeaderTypeDef CANRxHeader;
 FDCAN_FilterTypeDef CANFilter;
-uint8_t messageTx[8] = {0x07}; /*  (0 to 7) Single frame data length*/
-uint8_t messageRx[8] = {0};
-uint8_t flag = 0u;
 
+static uint8_t flag = 0u;
 
+//extern void initialise_monitor_handles(void);
 APP_MsgTypeDef msgCasio;
+
 
 void Serial_Init( void )
 {
@@ -60,31 +60,24 @@ void Serial_Init( void )
 }
 
 void Serial_Task( void )
-{ 
-    Serial_State_Machine();
-}
-
-void Serial_State_Machine( void )
 {
-   // initialise_monitor_handles();
+    //initialise_monitor_handles();
     static uint8_t state = SERIAL_STATE_IDLE;
+    static uint8_t messageTx[8] = {0x07}; /*  (0 to 7) Single frame data length*/
+    static uint8_t messageRx[8] = {0};
 
     switch(state)
     {
         case SERIAL_STATE_IDLE:
-            //if( CanTp_SingleFrameRx( messageRx,8 ) )
-            //{
-            //    state = SERIAL_STATE_MESSAGE;
-            //}
-            if( msgCasio.msg != SERIAL_MSG_NONE)
+            if( CanTp_SingleFrameRx( messageRx,8u ) )
             {
                 state = SERIAL_STATE_MESSAGE;
             }
             break;
 
         case SERIAL_STATE_MESSAGE:
-           // printf("MESSAGE\n\r");
-            switch(msgCasio.msg)
+           //printf("MESSAGE\n\r");
+            switch(messageRx[1])
             {
                 case SERIAL_MSG_TIME:
                     state = SERIAL_STATE_TIME;
@@ -104,9 +97,10 @@ void Serial_State_Machine( void )
 
         case SERIAL_STATE_TIME:
             //printf("TIME\n\r");
-            if( validateTime( msgCasio.tm.tm_hour, msgCasio.tm.tm_min, msgCasio.tm.tm_sec ) )
+            if( validateTime( messageRx ) )
             {
-                //printf("%0.2d:%0.2d:%0.2d Hrs\n\r",msgCasio.tm.tm_hour, msgCasio.tm.tm_min, msgCasio.tm.tm_sec);
+                
+              //  printf("%0.2d:%0.2d:%0.2d Hrs\n\r",msgCasio.tm.tm_hour, msgCasio.tm.tm_min, msgCasio.tm.tm_sec);
                 state = SERIAL_STATE_OK;
             }
             else
@@ -117,10 +111,10 @@ void Serial_State_Machine( void )
 
         case SERIAL_STATE_DATE:
             //printf("DATE\n\r");
-            if( validateDate( msgCasio.tm.tm_mday, msgCasio.tm.tm_mon, msgCasio.tm.tm_year) )
+            if( validateDate( messageRx ) )
             {
-                //printf("%0.2d//%0.2d//%0.2d \n\r",msgCasio.tm.tm_mday, msgCasio.tm.tm_mon, msgCasio.tm.tm_year);
-                state = SERIAL_STATE_IDLE;
+                //printf("%0.2d/%0.2d/%0.2d \n\r",msgCasio.tm.tm_mday, msgCasio.tm.tm_mon, msgCasio.tm.tm_year);
+                state = SERIAL_STATE_OK;
             }
             else
             {
@@ -129,10 +123,10 @@ void Serial_State_Machine( void )
             break;
 
         case SERIAL_STATE_ALARM:
-            printf("ALARMA\n\r");
-            if( validateTime( msgCasio.tm.tm_hour, msgCasio.tm.tm_min, 0 ) )
+            //printf("ALARMA\n\r");
+            if( validateAlarm( messageRx ) )
             {
-                printf("%0.2d:%0.2d Hrs\n\r",msgCasio.tm.tm_hour, msgCasio.tm.tm_min);
+                //printf("%0.2d:%0.2d Hrs\n\r",msgCasio.tm.tm_hour, msgCasio.tm.tm_min);
                 state = SERIAL_STATE_OK;
             }
             else
@@ -143,9 +137,11 @@ void Serial_State_Machine( void )
 
         case SERIAL_STATE_OK:
             //printf("OK\n\r");
+            updateMessageCAN( messageRx );
             messageTx[1] = 0x55;
             CanTp_SingleFrameTx(messageTx,8);
             state = SERIAL_STATE_IDLE;
+            //msgCasio.msg = SERIAL_MSG_NONE;
             break;
 
         case SERIAL_STATE_ERROR:
@@ -153,6 +149,7 @@ void Serial_State_Machine( void )
             messageTx[1] = 0xAA;
             CanTp_SingleFrameTx(messageTx,8);
             state = SERIAL_STATE_IDLE;
+           // msgCasio.msg = SERIAL_MSG_NONE;
             break;
     }
 }
@@ -160,7 +157,7 @@ void Serial_State_Machine( void )
 static void CanTp_SingleFrameTx( uint8_t *data, uint8_t size )
 {
     /*Colocanmos el mensaje en el buffer de salida y activamos el envio*/
-    HAL_FDCAN_AddMessageToTxFifoQ( &CANHandler, &CANTxHeader, messageTx );
+    HAL_FDCAN_AddMessageToTxFifoQ( &CANHandler, &CANTxHeader, data );
 }
 
 static uint8_t CanTp_SingleFrameRx( uint8_t *data, uint8_t *size )
@@ -169,47 +166,35 @@ static uint8_t CanTp_SingleFrameRx( uint8_t *data, uint8_t *size )
 
     if( flag == 1u)
     {
-        msgCasio.msg = data[1];
-        switch(msgCasio.msg)
-        {
-            case SERIAL_MSG_TIME:
-                msgCasio.tm.tm_hour = data[2];
-                msgCasio.tm.tm_min = data[3];
-                msgCasio.tm.tm_sec = data[4];
-                break;
-            case SERIAL_MSG_DATE:
-                msgCasio.tm.tm_mday = data[2];
-                msgCasio.tm.tm_mon = data[3];
-                uint32_t year = data[4] << 8;
-                msgCasio.tm.tm_year = year + data[5] ;
-                break;
-            case SERIAL_MSG_ALARM:
-                msgCasio.tm.tm_hour = data[2];
-                msgCasio.tm.tm_min = data[3];
-                break;
-            default:
-                msgCasio.msg = SERIAL_MSG_NONE;
-        }
-        flag = 0;
+         /* Retrieve Rx messages from RX FIFO0 */
+        HAL_FDCAN_GetRxMessage( &CANHandler, FDCAN_RX_FIFO0, &CANRxHeader, data );
         status = 1;
+        flag = 0;
     }
-    return status;   
+    return status;
 }
 
 void HAL_FDCAN_RxFifo0Callback( FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs )
 {
     if((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != 0)
     {
-        /* Retrieve Rx messages from RX FIFO0 */
-        HAL_FDCAN_GetRxMessage( hfdcan, FDCAN_RX_FIFO0, &CANRxHeader, messageRx );
+       // /* Retrieve Rx messages from RX FIFO0 */
+       // HAL_FDCAN_GetRxMessage( hfdcan, FDCAN_RX_FIFO0, &CANRxHeader, messageRx );
         flag = 1u;
     }
 }
 
-uint8_t validateDate(uint32_t day, uint32_t month, uint32_t year)
+static uint8_t validateDate(uint8_t *data)
 {
+    uint8_t day;
+    uint8_t month;
+    uint32_t year;
     uint8_t success = 0;
     uint32_t maxDay;
+
+    day = ( data[2] >> 4 ) * 10 + ( data[2] & 0x0F );
+    month = ( data[3] >> 4 ) * 10 + ( data[3] & 0x0F );
+    year = ( data[4] >> 4 ) * 1000 + ( data[4] & 0x0F ) * 100 + ( data[5] >> 4 ) * 10 + ( data[5] & 0x0F );
 
     if(month >= 1 && month <= 12)
     {
@@ -247,15 +232,63 @@ uint8_t validateDate(uint32_t day, uint32_t month, uint32_t year)
         }
     }
     return success; 
+            
 }
 
-uint8_t validateTime(uint32_t hour, uint32_t min, uint32_t seg)
+static uint8_t validateTime(uint8_t *data)
 {
-    uint8_t success = 0;
-
-    if( (hour >= 0 && hour <= 23) && (min >= 0 && min <= 59) && (seg >= 0 && seg <= 59) )
-    { 
+   uint32_t hour;
+   uint32_t min;
+   uint32_t sec;
+   uint8_t success = 0;
+   
+   hour = ( data[2] >> 4 ) * 10 + ( data[2] & 0x0F );
+   min = ( data[3] >> 4 ) * 10 + ( data[3] & 0x0F );
+   sec = ( data[4] >> 4 ) * 10 + ( data[4] & 0x0F );
+   
+   if( (hour >= 0 && hour <= 23) && (min >= 0 && min <= 59) && (sec >= 0 && sec <= 59) )
+   {
         success = 1;
+   }
+   
+   return success;
+}
+
+static uint8_t validateAlarm(uint8_t *data)
+{
+   uint32_t hour;
+   uint32_t min;
+   uint8_t success = 0;
+   
+   hour = ( data[2] >> 4 ) * 10 + ( data[2] & 0x0F );
+   min = ( data[3] >> 4 ) * 10 + ( data[3] & 0x0F );
+    
+   if( (hour >= 0 && hour <= 23) && (min >= 0 && min <= 59)  )
+   {
+        success = 1;
+   }
+   
+   return success;
+}
+
+static void updateMessageCAN( uint8_t *data )
+{
+    msgCasio.msg = data[1];
+    switch(msgCasio.msg)
+    {
+        case SERIAL_MSG_TIME:
+            msgCasio.tm.tm_hour = ( data[2] >> 4 ) * 10 + ( data[2] & 0x0F );
+            msgCasio.tm.tm_min = ( data[3] >> 4 ) * 10 + ( data[3] & 0x0F );
+            msgCasio.tm.tm_sec = ( data[4] >> 4 ) * 10 + ( data[4] & 0x0F );
+            break;
+        case SERIAL_MSG_DATE:
+            msgCasio.tm.tm_mday = ( data[2] >> 4 ) * 10 + ( data[2] & 0x0F );
+            msgCasio.tm.tm_mon = ( data[3] >> 4 ) * 10 + ( data[3] & 0x0F );
+            msgCasio.tm.tm_year = ( data[4] >> 4 ) * 1000 + ( data[4] & 0x0F ) * 100 + ( data[5] >> 4 ) * 10 + ( data[5] & 0x0F );
+            break;
+        case SERIAL_MSG_ALARM:
+            msgCasio.tm.tm_hour = ( data[2] >> 4 ) * 10 + ( data[2] & 0x0F );
+            msgCasio.tm.tm_min = ( data[3] >> 4 ) * 10 + ( data[3] & 0x0F );
+            break;
     }
-    return success;
 }

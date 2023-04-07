@@ -44,23 +44,18 @@ void Clock_Init( void )
 
 void Clock_Task( void )
 {
-    Clock_State_Machine(); 
-}
-
-static void Clock_State_Machine( void )
-{
     static uint8_t state = CLOCK_STATE_IDLE;
 
     switch(state)
     {
         case CLOCK_STATE_IDLE:
-            if ( elapsed1Seg() )
-            {
-                state = CLOCK_STATE_DISPLAY;
-            }
-            if( msgCasio.msg != SERIAL_MSG_NONE)
+            if ( msgCasio.msg != SERIAL_MSG_NONE )
             {
                 state = CLOCK_STATE_MESSAGE;
+            }
+            else if( elapsed1Seg() )
+            {
+                state = CLOCK_STATE_DISPLAY;
             }
             break;
 
@@ -69,14 +64,17 @@ static void Clock_State_Machine( void )
             {
                 case SERIAL_MSG_TIME:
                     state = CLOCK_STATE_TIME;
+                    msgCasio.msg = SERIAL_MSG_NONE;
                     break;
 
                 case SERIAL_MSG_DATE:
                     state = CLOCK_STATE_DATE;
+                    msgCasio.msg = SERIAL_MSG_NONE;
                     break;
 
                 case SERIAL_MSG_ALARM:
                     state = CLOCK_STATE_ALARM;
+                    msgCasio.msg = SERIAL_MSG_NONE;
                     break;
             }
             break;
@@ -84,25 +82,25 @@ static void Clock_State_Machine( void )
         case CLOCK_STATE_TIME:
             /* Get the RTC current Time */
             updateTime();
-            state = CLOCK_STATE_IDLE;  
+            state = CLOCK_STATE_DISPLAY;  
             break;
 
         case CLOCK_STATE_DATE:
             /* Get the RTC current date */
             updateDate();
-            state = CLOCK_STATE_IDLE;
+            state = CLOCK_STATE_DISPLAY;
             break;
 
         case CLOCK_STATE_ALARM:
             /* Get the RTC current time and date */
             updateAlarm();
-            state = CLOCK_STATE_IDLE; 
+            state = CLOCK_STATE_DISPLAY; 
             break;
         case CLOCK_STATE_DISPLAY:
             display( );
             state = CLOCK_STATE_IDLE;
             break;
-    }
+    } 
 }
 
 static void updateTime( void )
@@ -113,7 +111,7 @@ static void updateTime( void )
     sTime.Seconds = msgCasio.tm.tm_sec;
 
     /*Set the time */
-    HAL_RTC_SetTime( &hrtc, &sTime, RTC_FORMAT_BCD );
+    HAL_RTC_SetTime( &hrtc, &sTime, RTC_FORMAT_BIN );
 
     seg = sTime.Seconds;
 }
@@ -123,10 +121,10 @@ static void updateDate( void )
     /* Setting date in BCD format */
     sDate.Month = msgCasio.tm.tm_mon;
     sDate.Date = msgCasio.tm.tm_mday;
-    sDate.Year = msgCasio.tm.tm_year;
+    sDate.Year = ( ( msgCasio.tm.tm_year % 1000 ) % 100 );
 
     /*Set the date */
-    HAL_RTC_SetDate( &hrtc, &sDate, RTC_FORMAT_BCD );
+    HAL_RTC_SetDate( &hrtc, &sDate, RTC_FORMAT_BIN );
 }
 
 static void updateAlarm( void )
@@ -136,7 +134,7 @@ static void updateAlarm( void )
     sAlarm.AlarmTime.Minutes = msgCasio.tm.tm_min;
     
     /*Set the alarm */
-    HAL_RTC_SetAlarm( &hrtc, &sAlarm, RTC_FORMAT_BCD );
+    HAL_RTC_SetAlarm( &hrtc, &sAlarm, RTC_FORMAT_BIN );
 }
 
 static uint8_t elapsed1Seg( void )

@@ -15,10 +15,10 @@ typedef enum
 
 void Clock_Init( void );
 void Clock_Task( void );
-static void Clock_State_Machine( void );
 static void updateTime( void );
 static void updateDate( void );
 static void updateAlarm( void );
 static uint8_t elapsed1Seg( void );
 static void display( void );
+
 #endif
