@@ -1,5 +1,5 @@
-#ifndef __APP_CLOCK_H__
-#define __APP_CLOCK_H__
+#ifndef APP_CLOCK_H
+#define APP_CLOCK_H
 
 #include "app_bsp.h"
 
@@ -15,9 +15,4 @@ typedef enum
 
 void Clock_Init( void );
 void Clock_Task( void );
-static void updateTime( void );
-static void updateDate( void );
-static void updateAlarm( void );
-static uint8_t elapsed1Seg( void );
-static void display( void );
 #endif

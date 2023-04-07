@@ -2,8 +2,8 @@
  * Archivo con la funciones de interrupcion del micrcontroladores, revisar archivo startup_stm32g0b1.S
 -------------------------------------------------------------------------------------------------*/
 #include "app_bsp.h"
+#include "app_serial.h"
 
-extern FDCAN_HandleTypeDef CANHandler;
     
 void TIM16_FDCAN_IT0_IRQHandler( void )
 {

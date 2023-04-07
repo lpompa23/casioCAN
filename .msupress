@@ -4,3 +4,9 @@
 
 // suppress all MISRA warnings in source/cmsis-st32mg0xx folder
 
+
+// justification: The files belong to a external payed library beyond the scope of this program
+misra-c2012-8.4:app/app_ints.c
+misra-c2012-2.7:app/app_msps.c
+misra-c2012-8.4:app/app_msps.c
+misra-c2012-2.7:app/app_serial.c

@@ -1,5 +1,5 @@
-#ifndef __APP_SERIAL_H__
-#define __APP_SERIAL_H__
+#ifndef APP_SERIAL_H
+#define APP_SERIAL_H
 
 #include "app_bsp.h"
 
@@ -42,14 +42,11 @@ typedef struct _APP_MsgTypeDef
     APP_TmTypeDef tm;     /*!< time and date in stdlib tm format */
 }APP_MsgTypeDef;
  
+extern APP_MsgTypeDef Serial_Msg;
+extern FDCAN_HandleTypeDef CANHandler;
 
 void Serial_Init( void );
 void Serial_Task( void );
-static void CanTp_SingleFrameTx( uint8_t *data, uint8_t size );
-static uint8_t CanTp_SingleFrameRx( uint8_t *data, uint8_t *size );
-static uint8_t validateDate( uint8_t *data );
-static uint8_t validateTime( uint8_t *data );
-static uint8_t validateAlarm( uint8_t *data);
-static void updateMessageCAN( uint8_t * data);
+void HAL_FDCAN_RxFifo0Callback( FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs );
 
 #endif

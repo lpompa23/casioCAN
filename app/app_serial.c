@@ -1,9 +1,16 @@
 #include "app_serial.h"
 
+static void CanTp_SingleFrameTx( uint8_t *data, uint8_t size );
+static uint8_t CanTp_SingleFrameRx( uint8_t *data, uint8_t *size );
+static uint8_t validateDate(uint8_t *data);
+static uint8_t validateTime(uint8_t *data);
+static uint8_t validateAlarm(uint8_t *data);
+static void updateMessageCAN( uint8_t *data );
+
+
 /* Declaration of structure type variables for USER CAN initialization */
 FDCAN_HandleTypeDef CANHandler;
 static FDCAN_TxHeaderTypeDef CANTxHeader;
-
 static uint8_t flag = 0u;
 
 //extern void initialise_monitor_handles(void);
@@ -65,11 +72,12 @@ void Serial_Task( void )
     static APP_States state = SERIAL_STATE_IDLE;
     static uint8_t messageTx[8] = {0x07,0x00,0x00,0x00,0x00,0x00,0x00,0x00}; /*  (0 to 7) Single frame data length*/
     static uint8_t messageRx[8] = {0};
+    uint8_t data = 8;
 
     switch(state)
     {
         case SERIAL_STATE_IDLE:
-            if( CanTp_SingleFrameRx( messageRx,8u ) == 1u )
+            if( CanTp_SingleFrameRx( messageRx, &data ) == 1u )
             {
                 state = SERIAL_STATE_MESSAGE;
             }
@@ -153,17 +161,18 @@ void Serial_Task( void )
            // Serial_Msg.msg = SERIAL_MSG_NONE;
             break;
         default:
+            break;
     }
 }
 
-void CanTp_SingleFrameTx( uint8_t *data, uint8_t size )
+static void CanTp_SingleFrameTx( uint8_t *data, uint8_t size )
 {
     /*Colocanmos el mensaje en el buffer de salida y activamos el envio*/
     HAL_FDCAN_AddMessageToTxFifoQ( &CANHandler, &CANTxHeader, data );
     uint8_t tmp = size;
 }
 
-uint8_t CanTp_SingleFrameRx( uint8_t *data, uint8_t *size )
+static uint8_t CanTp_SingleFrameRx( uint8_t *data, uint8_t *size )
 {
     static FDCAN_RxHeaderTypeDef CANRxHeader;
     uint8_t status = 0;
@@ -231,6 +240,7 @@ static uint8_t validateDate(uint8_t *data)
                 }
                 break;
             default:
+                break;
         }    
         if( ( day >= 1u ) && ( day <= maxDay ) && ( year >= 1901u ) && ( year <= 2099u ) )
         {
@@ -297,5 +307,6 @@ static void updateMessageCAN( uint8_t *data )
             Serial_Msg.tm.tm_min = ( ( data[3] >> 4u ) * 10u ) + ( data[3] & 15u );
             break;
         default:
+            break;
     }
 }

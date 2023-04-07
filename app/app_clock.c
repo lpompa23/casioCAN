@@ -1,12 +1,17 @@
 #include "app_clock.h"
 #include "app_serial.h"
 #include "app_bsp.h"
+#include <stdio.h>      /* cppcheck-suppress misra-c2012-21.6 ; the header file es only for testint pourpose */
+
+static void updateTime( void );
+static void updateDate( void );
+static void updateAlarm( void );
+static uint8_t elapsed1Seg( void );
+static void display( void );
 
 extern void initialise_monitor_handles(void);
 
-extern APP_MsgTypeDef Serial_Msg;
 static RTC_HandleTypeDef hrtc;
-
 static RTC_DateTypeDef sDate = {0};
 static RTC_TimeTypeDef sTime = {0};
 static RTC_AlarmTypeDef sAlarm = {0};
@@ -77,7 +82,7 @@ void Clock_Task( void )
                     Serial_Msg.msg = SERIAL_MSG_NONE;
                     break;
                 default:
-
+                    break;
             }
             break;
 
@@ -103,10 +108,11 @@ void Clock_Task( void )
             state = CLOCK_STATE_IDLE;
             break;
         default:
+            break;
     } 
 }
 
-void updateTime( void )
+static void updateTime( void )
 {
     /* Setting time in BCD format */
     sTime.Hours   = Serial_Msg.tm.tm_hour;
@@ -164,8 +170,8 @@ static void display( void )
 {
     initialise_monitor_handles();
 
-    printf("\n");
-    printf("Time:  %02d:%02d:%02d\n\r", sTime.Hours, sTime.Minutes, sTime.Seconds);
-    printf("Date:  %02d/%02d/%02d\n\r", sDate.Date, sDate.Month, sDate.Year);
-    printf("Alarm: %02d:%02d\n\r", sAlarm.AlarmTime.Hours, sAlarm.AlarmTime.Minutes);
+    printf("\n"); /* cppcheck-suppress misra-c2012-17.7 ; the function es only for testint pourpose */
+    printf("Time:  %02d:%02d:%02d\n\r", sTime.Hours, sTime.Seconds, sTime.Seconds); /* cppcheck-suppress misra-c2012-17.7 ; the function es only for testint pourpose */
+    printf("Date:  %02d/%02d/%02d\n\r", sDate.Date, sDate.Month, sDate.Year); /* cppcheck-suppress misra-c2012-17.7 ; the function es only for testint pourpose */
+    printf("Alarm: %02d:%02d\n\r", sAlarm.AlarmTime.Hours, sAlarm.AlarmTime.Minutes); /* cppcheck-suppress misra-c2012-17.7 ; the function es only for testint pourpose */
 }
