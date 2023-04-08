@@ -22,6 +22,10 @@
 #include "app_serial.h"
 #include "app_clock.h"
 
+static uint32_t tickstart;
+void heart_init( void );
+void heart_beat( void );
+
 
 /**
  * @brief   **Application entry point**
@@ -32,18 +36,38 @@
  */
 int main( void )
 {
-   HAL_Init();
-   Serial_Init();
-   Clock_Init();
+     HAL_Init();
+     heart_init();
+     Serial_Init();
+     Clock_Init();
  
-
-   for( ; ;)
-   {
-
-        Serial_Task();
-        Clock_Task();
-
-   }
+     tickstart = HAL_GetTick( );
+     for( ; ;)
+     {
+          Serial_Task();
+          Clock_Task();
+          heart_beat();
+     }
     return 0u;
 }
 
+void heart_init(void)
+{
+     GPIO_InitTypeDef  GPIO_InitStruct;
+     __HAL_RCC_GPIOC_CLK_ENABLE( );
+
+     GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_PP;
+     GPIO_InitStruct.Pull  = GPIO_NOPULL;
+     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+     GPIO_InitStruct.Pin   = GPIO_PIN_0 ;
+     HAL_GPIO_Init( GPIOC, &GPIO_InitStruct );
+}
+
+void heart_beat(void)
+{
+     if( (HAL_GetTick( ) - tickstart ) >= 300)
+     {
+          HAL_GPIO_TogglePin( GPIOC, GPIO_PIN_0 ); /*invertimos led*/
+          tickstart = HAL_GetTick( );
+     }
+}
