@@ -22,9 +22,13 @@
 #include "app_serial.h"
 #include "app_clock.h"
 
-static uint32_t tickstart;
-void heart_init( void );
-void heart_beat( void );
+static uint32_t tickstart_heart;
+static uint32_t tickstart_dog;
+static WWDG_HandleTypeDef hwwdg;
+static void heart_init( void );
+static void heart_beat( void );
+static void dog_init( void );
+static void peth_the_dog( void );
 
 
 /**
@@ -37,37 +41,64 @@ void heart_beat( void );
 int main( void )
 {
      HAL_Init();
-     heart_init();
-     Serial_Init();
-     Clock_Init();
- 
-     tickstart = HAL_GetTick( );
-     for( ; ;)
-     {
-          Serial_Task();
-          Clock_Task();
-          heart_beat();
+     heart_init( );
+     /* dog_init( ); */
+     Serial_Init( );
+     Clock_Init( ); 
+       
+     tickstart_heart = HAL_GetTick( );  
+     tickstart_dog = HAL_GetTick( );
+
+     for( ; ; )
+     {    
+  
+          Serial_Task( );
+          Clock_Task( );
+          heart_beat( );
+          /* peth_the_dog( ); */
+
      }
     return 0u;
 }
 
-void heart_init(void)
+static void heart_init(void)
 {
      GPIO_InitTypeDef  GPIO_InitStruct;
      __HAL_RCC_GPIOC_CLK_ENABLE( );
 
      GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_PP;
      GPIO_InitStruct.Pull  = GPIO_NOPULL;
-     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
      GPIO_InitStruct.Pin   = GPIO_PIN_0 ;
      HAL_GPIO_Init( GPIOC, &GPIO_InitStruct );
 }
 
-void heart_beat(void)
+static void heart_beat(void)
 {
-     if( (HAL_GetTick( ) - tickstart ) >= 300)
+     if( (HAL_GetTick( ) - tickstart_heart ) >= 300u)
      {
           HAL_GPIO_TogglePin( GPIOC, GPIO_PIN_0 ); /*invertimos led*/
-          tickstart = HAL_GetTick( );
+          tickstart_heart = HAL_GetTick( );
+     }
+}
+
+static void dog_init(void)
+{
+     /* Para una ventana de 13ms y 20ms */
+     hwwdg.Instance = WWDG;
+     hwwdg.Init.Prescaler = WWDG_PRESCALER_4;
+     hwwdg.Init.Window = 72u;
+     hwwdg.Init.Counter = 84u;
+     hwwdg.Init.EWIMode = WWDG_EWI_DISABLE;
+
+     HAL_WWDG_Init(&hwwdg);     
+}
+
+static void peth_the_dog(void)
+{
+     if( (HAL_GetTick( ) - tickstart_dog ) >= 18)
+     {
+          HAL_WWDG_Refresh( &hwwdg );
+          tickstart_dog = HAL_GetTick( );
      }
 }

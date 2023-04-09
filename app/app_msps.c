@@ -54,6 +54,22 @@ void HAL_RTC_MspInit( RTC_HandleTypeDef* hrtc )
     /* Peripheral clock enable */
     __HAL_RCC_RTC_ENABLE();
     __HAL_RCC_RTCAPB_CLK_ENABLE();
+
+}
+
+void HAL_WWDG_MspInit(WWDG_HandleTypeDef* hwwdg)
+{
+  if(hwwdg->Instance==WWDG)
+  {
+  /* USER CODE BEGIN WWDG_MspInit 0 */
+
+  /* USER CODE END WWDG_MspInit 0 */
+    /* Peripheral clock enable */
+    __HAL_RCC_WWDG_CLK_ENABLE();
+  /* USER CODE BEGIN WWDG_MspInit 1 */
+
+  /* USER CODE END WWDG_MspInit 1 */
+  }
 }
 
 void HAL_MspInit( void )
