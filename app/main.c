@@ -41,21 +41,21 @@ static void peth_the_dog( void );
 int main( void )
 {
      HAL_Init();
-     heart_init( );
-     /* dog_init( ); */
+     heart_init( );    
      Serial_Init( );
      Clock_Init( ); 
+     dog_init( );
        
      tickstart_heart = HAL_GetTick( );  
      tickstart_dog = HAL_GetTick( );
-
+     
      for( ; ; )
      {    
   
           Serial_Task( );
           Clock_Task( );
           heart_beat( );
-          /* peth_the_dog( ); */
+          peth_the_dog( ); 
 
      }
     return 0u;
@@ -84,11 +84,11 @@ static void heart_beat(void)
 
 static void dog_init(void)
 {
-     /* Para una ventana de 13ms y 20ms */
+     /* Para una ventana de 13ms y 20ms con reloj del APB 32MHza*/
      hwwdg.Instance = WWDG;
      hwwdg.Init.Prescaler = WWDG_PRESCALER_4;
-     hwwdg.Init.Window = 72u;
-     hwwdg.Init.Counter = 84u;
+     hwwdg.Init.Window = 77u; 
+     hwwdg.Init.Counter = 103u; 
      hwwdg.Init.EWIMode = WWDG_EWI_DISABLE;
 
      HAL_WWDG_Init(&hwwdg);     
@@ -96,7 +96,7 @@ static void dog_init(void)
 
 static void peth_the_dog(void)
 {
-     if( (HAL_GetTick( ) - tickstart_dog ) >= 18)
+     if( (HAL_GetTick( ) - tickstart_dog ) >= 17)
      {
           HAL_WWDG_Refresh( &hwwdg );
           tickstart_dog = HAL_GetTick( );
