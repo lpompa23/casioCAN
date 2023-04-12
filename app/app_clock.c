@@ -1,3 +1,16 @@
+/**
+ * @file    app_clock.c
+ * @brief   This file provides firmware functions to manage the 
+ *          functionalities of one clock.
+ *          
+ *
+ * Write a detail description of your driver, what it does and how and how to work with its interfaces
+ * Use as many lines as you need
+ *
+ * @note    If there is something that needs to be take into account beyond its normal
+ *          utilization, write right here
+ */
+
 #include "app_clock.h"
 #include "app_serial.h"
 #include "app_bsp.h"
@@ -7,16 +20,38 @@ static void updateTime( void );
 static void updateDate( void );
 static void updateAlarm( void );
 static uint8_t elapsed1Seg( void );
+static uint32_t tickstar;
 static void display( void );
 
 extern void initialise_monitor_handles(void);
 
+/**
+ * @brief  TypeDef para el RTC
+ */
 static RTC_HandleTypeDef hrtc;
+/**
+ * @brief  TypeDef para la fecha
+ */
 static RTC_DateTypeDef sDate = {0};
+/**
+ * @brief  TypeDef para la hora
+ */
 static RTC_TimeTypeDef sTime = {0};
+/**
+ * @brief  TypeDef para la alarma
+ */
 static RTC_AlarmTypeDef sAlarm = {0};
-static uint8_t seg = 0;
 
+/**
+ * @brief  Initialize the Clock and regular group according to
+ *         parameters.
+ *
+ * @param   hrtc [in/out] RTC handler
+ * @param   sTime [in/out] RCT time
+ * @param   sDate [in/out] RTC date
+ *
+ * @retval  None
+ */
 void Clock_Init( void )
 {
     /*configuration*/
@@ -44,9 +79,16 @@ void Clock_Init( void )
     /*Set date to Thursday, march 4, 2023*/
     HAL_RTC_SetDate( &hrtc, &sDate, RTC_FORMAT_BCD );
 
-    seg = sTime.Seconds;
+    tickstar = HAL_GetTick( );
 }   
 
+/**
+ * @brief  Ejecuta la máquina de estados del reloj
+ *
+ * @param   Serial_Msg [in] Structura de mensaje
+ *
+ * @retval  None
+ */
 void Clock_Task( void )
 {
     static APP_Clock_State state = CLOCK_STATE_IDLE;
@@ -54,14 +96,16 @@ void Clock_Task( void )
     switch(state)
     {
         case CLOCK_STATE_IDLE:
-            if ( Serial_Msg.msg != SERIAL_MSG_NONE )
-            {
-                state = CLOCK_STATE_MESSAGE;
-            }
             if( elapsed1Seg() == 1u)
             {
                 state = CLOCK_STATE_DISPLAY;
             }
+            else if ( Serial_Msg.msg != SERIAL_MSG_NONE )
+            {
+                state = CLOCK_STATE_MESSAGE;
+            }
+            else
+            {}         
             break;
 
         case CLOCK_STATE_MESSAGE:
@@ -112,6 +156,14 @@ void Clock_Task( void )
     } 
 }
 
+/**
+ * @brief  Actualiza la hora del reloj
+ *
+ * @param   hrtc [in] RTC handler
+ * @param   sTime [in/out] RCT time
+ *
+ * @retval  None
+ */
 static void updateTime( void )
 {
     /* Setting time in BCD format */
@@ -122,9 +174,16 @@ static void updateTime( void )
     /*Set the time */
     HAL_RTC_SetTime( &hrtc, &sTime, RTC_FORMAT_BIN );
 
-    seg = sTime.Seconds;
 }
 
+/**
+ * @brief  Actualiza la fecha del reloj
+ *
+ * @param   hrtc [in] RTC handler
+ * @param   sDate [in/out] RTC date
+ *
+ * @retval  None
+ */
 static void updateDate( void )
 {
     /* Setting date in BCD format */
@@ -136,6 +195,14 @@ static void updateDate( void )
     HAL_RTC_SetDate( &hrtc, &sDate, RTC_FORMAT_BIN );
 }
 
+/**
+ * @brief  Actualiza la hora de la alarma
+ *
+ * @param   hrtc [in] RTC handler
+ * @param   sAlarm [in/out] Alarma del RTC
+ *
+ * @retval  None
+ */
 static void updateAlarm( void )
 {
     /* Setting Alarm in BCD format */
@@ -146,29 +213,42 @@ static void updateAlarm( void )
     HAL_RTC_SetAlarm( &hrtc, &sAlarm, RTC_FORMAT_BIN );
 }
 
+/**
+ * @brief  Verifica si ya trasncurrio un segundo
+ *
+ * @param   tickstar [in/out] tiempo transcurrido
+ *
+ * @retval  un verdadero si transcurrio un segundo, falto en caso contrario
+ */
 static uint8_t elapsed1Seg( void )
 {
-    uint8_t elapsed = 0u;
+    uint8_t timeOver = 0u; 
 
-    HAL_RTC_GetTime( &hrtc, &sTime, RTC_FORMAT_BIN );
-    HAL_RTC_GetDate( &hrtc, &sDate, RTC_FORMAT_BIN );
-
-    if(sTime.Seconds == seg)
+    if( ( HAL_GetTick( ) - tickstar ) >= 1000u )
     {
-        seg++;
-        if(seg == 60u) 
-        {
-            seg = 0u;
-        }
-        elapsed = 1u;   
+        tickstar = HAL_GetTick( );
+        timeOver = 1;
     }
 
-    return elapsed;
+    return timeOver;
 }
 
+/**
+ * @brief  Muestra por el semihost la hora, fecha y alarma actual
+ *         parameters
+ *
+ * @param   hrtc [in] RTC handler
+ * @param   sTime [in/out] RCT time
+ * @param   sDate [in/out] RTC date
+ *
+ * @retval  None
+ */
 static void display( void )
 {
     initialise_monitor_handles();
+
+    HAL_RTC_GetTime( &hrtc, &sTime, RTC_FORMAT_BIN );
+    HAL_RTC_GetDate( &hrtc, &sDate, RTC_FORMAT_BIN );
 
     printf("\n"); /* cppcheck-suppress misra-c2012-17.7 ; the function es only for testint pourpose */
     printf("Time:  %02d:%02d:%02d\n\r", sTime.Hours, sTime.Minutes, sTime.Seconds); /* cppcheck-suppress misra-c2012-17.7 ; the function es only for testint pourpose */

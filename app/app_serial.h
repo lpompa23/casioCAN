@@ -3,6 +3,10 @@
 
 #include "app_bsp.h"
 
+/**
+  * @brief   Enumeración para los distintos mensajes
+  *          que se pueden recibir
+  */
 typedef enum 
 {
     SERIAL_MSG_NONE = 0,
@@ -11,6 +15,10 @@ typedef enum
     SERIAL_MSG_ALARM
 }APP_Messages;
 
+/**
+  * @brief   Enumeración que agrupa los estados de 
+  *          la máquina de estados
+  */
 typedef enum
 {
     SERIAL_STATE_IDLE = 0,
@@ -22,6 +30,10 @@ typedef enum
     SERIAL_STATE_ERROR
 }APP_States;
 
+/**
+  * @brief   Estructura para almacenar la fecha y hora 
+  *         
+  */
 typedef struct _APP_TmTypeDef 
 {
     uint32_t tm_sec;         /* seconds,  range 0 to 59          */
@@ -35,7 +47,9 @@ typedef struct _APP_TmTypeDef
     uint32_t tm_isdst;       /* daylight saving time             */
 }APP_TmTypeDef;
 
-
+/**
+  * @brief   Tipo de dato para los mensajes
+  */
 typedef struct _APP_MsgTypeDef
 {
     APP_Messages msg;          /*!< Store the message type to send */

@@ -1,3 +1,13 @@
+/**
+ * @file    app_serial.c
+ * @brief   Este archivo contiene el firmware para llevar a cabo
+ *          una comunicación a través de protocolo CAN
+ *          
+ *
+ * @note    If there is something that needs to be take into account beyond its normal
+ *          utilization, write right here
+ */
+
 #include "app_serial.h"
 
 static void CanTp_SingleFrameTx( uint8_t *data, uint8_t size );
@@ -10,13 +20,27 @@ static void updateMessageCAN( uint8_t *data );
 
 /* Declaration of structure type variables for USER CAN initialization */
 FDCAN_HandleTypeDef CANHandler;
+
+/**
+ * @brief  TypeDef para configurfación de transmisión
+ */
 static FDCAN_TxHeaderTypeDef CANTxHeader;
+/**
+ * @brief  Bandera que se utiliza para indicar si llegó una trama
+ */
 static uint8_t flag = 0u;
 
 //extern void initialise_monitor_handles(void);
 APP_MsgTypeDef Serial_Msg;
 
-
+/**
+ * @brief  Inicializa la comunicación serial mediante el protocolo CAN
+ *
+ * @param   CANHandler [in/out] CAN handler
+ * @param   CANTxHeader [in/out] Parámetros de transmisión
+ *
+ * @retval  None
+ */
 void Serial_Init( void )
 {
     FDCAN_FilterTypeDef CANFilter;
@@ -26,7 +50,7 @@ void Serial_Init( void )
     CANHandler.Instance                 = FDCAN1;
     CANHandler.Init.Mode                = FDCAN_MODE_NORMAL;
     CANHandler.Init.FrameFormat         = FDCAN_FRAME_CLASSIC;
-    CANHandler.Init.ClockDivider        = FDCAN_CLOCK_DIV1;
+    CANHandler.Init.ClockDivider        = FDCAN_CLOCK_DIV2;
     CANHandler.Init.TxFifoQueueMode     = FDCAN_TX_FIFO_OPERATION;
     CANHandler.Init.AutoRetransmission  = DISABLE;
     CANHandler.Init.TransmitPause       = DISABLE;
@@ -66,9 +90,15 @@ void Serial_Init( void )
     Serial_Msg.msg = SERIAL_MSG_NONE;
 }
 
+/**
+ * @brief  Ejecuta la máquina de estados de la comunicación CAN
+ *
+ *
+ *
+ * @retval  None
+ */
 void Serial_Task( void )
 {
-    //initialise_monitor_handles();
     static APP_States state = SERIAL_STATE_IDLE;
     static uint8_t messageTx[8] = {0x07,0x00,0x00,0x00,0x00,0x00,0x00,0x00}; /*  (0 to 7) Single frame data length*/
     static uint8_t messageRx[8] = {0};
@@ -84,7 +114,6 @@ void Serial_Task( void )
             break;
 
         case SERIAL_STATE_MESSAGE:
-           //printf("MESSAGE\n\r");
             switch(messageRx[1])
             {
                 case SERIAL_MSG_TIME:
@@ -105,11 +134,8 @@ void Serial_Task( void )
             break;
 
         case SERIAL_STATE_TIME:
-            //printf("TIME\n\r");
             if( validateTime( messageRx ) == 1u )
             {
-                
-              //  printf("%0.2d:%0.2d:%0.2d Hrs\n\r",Serial_Msg.tm.tm_hour, Serial_Msg.tm.tm_min, Serial_Msg.tm.tm_sec);
                 state = SERIAL_STATE_OK;
             }
             else
@@ -119,10 +145,8 @@ void Serial_Task( void )
             break;
 
         case SERIAL_STATE_DATE:
-            //printf("DATE\n\r");
             if( validateDate( messageRx ) == 1u )
             {
-                //printf("%0.2d/%0.2d/%0.2d \n\r",Serial_Msg.tm.tm_mday, Serial_Msg.tm.tm_mon, Serial_Msg.tm.tm_year);
                 state = SERIAL_STATE_OK;
             }
             else
@@ -132,10 +156,8 @@ void Serial_Task( void )
             break;
 
         case SERIAL_STATE_ALARM:
-            //printf("ALARMA\n\r");
             if( validateAlarm( messageRx ) == 1u )
             {
-                //printf("%0.2d:%0.2d Hrs\n\r",Serial_Msg.tm.tm_hour, Serial_Msg.tm.tm_min);
                 state = SERIAL_STATE_OK;
             }
             else
@@ -145,33 +167,46 @@ void Serial_Task( void )
             break;
 
         case SERIAL_STATE_OK:
-            //printf("OK\n\r");
             updateMessageCAN( messageRx );
             messageTx[1] = 0x55;
             CanTp_SingleFrameTx(messageTx,8);
             state = SERIAL_STATE_IDLE;
-            //Serial_Msg.msg = SERIAL_MSG_NONE;
             break;
 
         case SERIAL_STATE_ERROR:
-            //printf("ERROR\n\r");
             messageTx[1] = 0xAA;
             CanTp_SingleFrameTx(messageTx,8);
             state = SERIAL_STATE_IDLE;
-           // Serial_Msg.msg = SERIAL_MSG_NONE;
             break;
         default:
             break;
     }
 }
 
+/**
+ * @brief  Envía una trama de 8 bits mediante CAN
+ *
+ * @param   data [in] Apuntador al arreglo de los datos
+ * @param   size [in/out] Cantidad de bytes a enviar
+ *
+ * @retval  None
+ */
 static void CanTp_SingleFrameTx( uint8_t *data, uint8_t size )
 {
     /*Colocanmos el mensaje en el buffer de salida y activamos el envio*/
+    CANTxHeader.DataLength  = size;
     HAL_FDCAN_AddMessageToTxFifoQ( &CANHandler, &CANTxHeader, data );
-    uint8_t tmp = size;
 }
 
+/**
+ * @brief  Lee una trama de 8 bytes que llegaron via CAN
+ *
+ * @param   data [in] Apuntador al arreglo donde se almacenará los datos
+ * @param   size [in/out] Apuntador a la cantidad de datos leidos
+ * @param   flag [in/out] Indicador de que hay datos que leer
+ *
+ * @retval  Regresa 1 si llegaron datos, 0 en caso contrario
+ */
 static uint8_t CanTp_SingleFrameRx( uint8_t *data, uint8_t *size )
 {
     static FDCAN_RxHeaderTypeDef CANRxHeader;
@@ -188,16 +223,29 @@ static uint8_t CanTp_SingleFrameRx( uint8_t *data, uint8_t *size )
     return status;
 }
 
+/**
+ * @brief  Verifica si llegó una trama via CAN
+ *
+ * @param   hfdcan [in] CAN Handler
+ *
+ * @retval  None
+ */
 void HAL_FDCAN_RxFifo0Callback( FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs )
 {
     if((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != 0u)
     {
-        /* Retrieve Rx messages from RX FIFO0 */
-       
+        /* Retrieve Rx messages from RX FIFO0 */     
         flag = 1u;
     }
 }
 
+/**
+ * @brief  Valida que estén correctos los datos de la fecha
+ *
+ * @param   data [in] Apuntador a los datos con la fecha
+ *
+ * @retval  Un 1 si la fecha es correcta, 0 en caso contrario
+ */
 static uint8_t validateDate(uint8_t *data)
 {
     uint8_t day;
@@ -206,8 +254,8 @@ static uint8_t validateDate(uint8_t *data)
     uint8_t success = 0;
     uint32_t maxDay;
 
-    day = ( data[2] >> (unsigned char)4 ) * (unsigned char)10 + ( data[2] & 15u );
-    month = ( data[3] >> (unsigned char)4 ) * (unsigned char)10 + ( data[3] & 15u );
+    day = ( ( data[2] >> 4u ) * 10u ) + ( data[2] & 15u );
+    month = ( ( data[3] >> 4u ) * 10u ) + ( data[3] & 15u );
     year = ( ( data[4] >> 4u ) * 1000u ) + ( ( data[4] & 15u ) * 100u ) + ( ( data[5] >> 4u ) * 10u ) + ( data[5] & 15u );
 
     if( (month >= (unsigned char)1 ) && ( month <= (unsigned char)12 ) )
@@ -251,6 +299,13 @@ static uint8_t validateDate(uint8_t *data)
             
 }
 
+/**
+ * @brief  Valida que estén correctos los datos de la hora
+ *
+ * @param   data [in] Apuntador a los datos con la hora
+ *
+ * @retval  Un 1 si la hora es correcta, 0 en caso contrario
+ */
 static uint8_t validateTime(uint8_t *data)
 {
    uint32_t hour;
@@ -270,6 +325,13 @@ static uint8_t validateTime(uint8_t *data)
    return success;
 }
 
+/**
+ * @brief  Valida que estén correctos los datos de la alarma
+ *
+ * @param   data [in] Apuntador a los datos de la alarma
+ *
+ * @retval  Un 1 si la alarma es correcta, 0 en caso contrario
+ */
 static uint8_t validateAlarm(uint8_t *data)
 {
    uint32_t hour;
@@ -287,6 +349,14 @@ static uint8_t validateAlarm(uint8_t *data)
    return success;
 }
 
+/**
+ * @brief  Actualiza la estructura de mensaje
+ *
+ * @param   data [in] Apuntador a los datos con la fecha
+ * @param   Serial_Msg [in/out] Estructura de mesaje
+ *
+ * @retval  ninguno
+ */
 static void updateMessageCAN( uint8_t *data )
 {
     Serial_Msg.msg = data[1];

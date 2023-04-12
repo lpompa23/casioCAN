@@ -3,6 +3,10 @@
 
 #include "app_bsp.h"
 
+/**
+  * @brief   Enumeración que agrupa los estados de 
+  *          la máquina de estados
+  */
 typedef enum
 {
     CLOCK_STATE_IDLE = 0,

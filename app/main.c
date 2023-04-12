@@ -44,19 +44,17 @@ int main( void )
      heart_init( );    
      Serial_Init( );
      Clock_Init( ); 
-     dog_init( );
+     //dog_init( );
        
      tickstart_heart = HAL_GetTick( );  
      tickstart_dog = HAL_GetTick( );
      
      for( ; ; )
-     {    
-  
+     {     
           Serial_Task( );
           Clock_Task( );
           heart_beat( );
-          peth_the_dog( ); 
-
+          //peth_the_dog( ); 
      }
     return 0u;
 }
